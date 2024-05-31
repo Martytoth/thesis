@@ -1,0 +1,76 @@
+mport pandas as pd
+import numpy as np
+import statsmodels.api as sm
+from statsmodels.tsa.stattools import adfuller
+import matplotlib.pyplot as plt
+
+
+data = pd.read_csv('thesis_vars_csv.csv', encoding='latin1')
+data.rename(columns={'ï»¿t': 't'}, inplace=True)
+data.drop(columns=['Unnamed: 7', 'Unnamed: 8'], inplace=True)
+data.set_index('t', inplace=True)
+
+
+#create variables
+
+
+
+y = data['Pt']
+x = data['mir']
+control_vars = data[['gdp', 'U', 'pi', 'i_spread']]
+
+print(data)
+
+#check stationarity
+# 1)
+data['Pt'].plot(title='Housing Prices over Time in €')
+plt.show()
+
+data['mir'].plot(title='Mortgage Interest Rates over Time')
+plt.show()
+#opposed trends, both change significantly in their mean, suggesting 
+#non-stationarity
+
+
+
+
+#2)
+mid_point = len(data) // 2
+first_half = data.iloc[:mid_point]
+second_half = data.iloc[mid_point:]
+
+print("First half mean and variance:")
+print(first_half.mean())
+print(first_half.var())
+
+print("Second half mean and variance:")
+print(second_half.mean())
+print(second_half.var())
+#mir: significant changes in both mean and variance (doubled??)
+#->non-stationary
+#Pt: both have huge increases
+#gpd: mean has significantly increased, variance has significantly decreased
+#->non-stationary
+#U:only variable so far that might be a staitionary time series (inconclusive)
+#pi mean has increased, though not that much, variance has greatly decresed
+#credit spread: both decrease quite a bit -> NS
+
+#3 unit-root test (Augmented Dickey-Fuller)
+
+def adf_test(series, title=''):
+    result = adfuller(series.dropna())
+    print(f'Augmented Dickey-Fuller Test: {title}')
+    print(f'Test Statistic: {result[0]}')
+    print(f'p-value: {result[1]}')
+    print(f'Critical Values: {result[4]}')
+    if result[1] <= 0.05:
+        print("Reject the null hypothesis - Series is stationary")
+    else:
+        print("Fail to reject the null hypothesis - Series is non-stationary")
+    print('\n')
+
+adf_test(data['Pt'], 'Pt')
+adf_test(data['mir'], 'mir')
+
+for column in control_vars.columns:
+    adf_test(control_vars[column], column)
